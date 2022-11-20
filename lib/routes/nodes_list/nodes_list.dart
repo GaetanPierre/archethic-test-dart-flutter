@@ -1,38 +1,30 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:archethic_lib_dart/archethic_lib_dart.dart';
 
 import '../../shared/custom_scaffold.dart';
 
-class TokenPricePage extends StatefulWidget {
-  const TokenPricePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
+class NodesListPage extends StatefulWidget {
+  const NodesListPage({super.key, required this.title});
 
   final String title;
 
   @override
-  State<TokenPricePage> createState() => _TokenPricePageState();
+  State<NodesListPage> createState() => _NodesListPageState();
 }
 
-class _TokenPricePageState extends State<TokenPricePage> {
-  static const List<String> currencyList = <String>['BTC', 'EUR', 'USD', 'GBP'];
-  String dropdownValue = currencyList.first;
-  SimplePriceResponse? _lastPrice;
-  String currency = "BTC";
+class _NodesListPageState extends State<NodesListPage> {
+  ApiService coinsService = ApiService("https://mainnet.archethic.net");
 
-  ApiCoinsService coinsService = ApiCoinsService();
+  List<Node> _nodeList = List<Node>.empty();
+
+  List<ListTile> _nodesListItems = List<ListTile>.empty();
 
   @override
   void initState() {
+    getNodesList();
     super.initState();
-    _search(dropdownValue);
   }
 
   @override
@@ -43,6 +35,7 @@ class _TokenPricePageState extends State<TokenPricePage> {
     // The Flutter framework has been optimized to make rerunning build methods
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
+
     return CustomScaffold(
         body: Center(
           // Center is a layout widget. It takes a single child and positions it
@@ -65,33 +58,19 @@ class _TokenPricePageState extends State<TokenPricePage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               Text(
-                'Testing some API of Archethic\'s coins service',
+                'Nodes list (${_nodeList.length}):',
                 style: Theme.of(context).textTheme.headline3,
               ),
-              const Text('Select currency :'),
-              DropdownButton<String>(
-                items:
-                    currencyList.map<DropdownMenuItem<String>>((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
-                value: dropdownValue,
-                onChanged: _onCurrencyChanged,
-                icon: const Icon(Icons.arrow_drop_down),
-              ),
-              Text(
-                'Last UCO/${_lastPrice?.currency} price:',
-              ),
-              Text(
-                '${_lastPrice?.localCurrencyPrice}',
-                style: Theme.of(context).textTheme.headline4,
+              Expanded(
+                child: ListView(
+                  padding: EdgeInsets.zero,
+                  children: _nodesListItems,
+                ),
               ),
             ],
           ),
         ),
-        title: 'UCO price'
+        title: 'Archethic nodes list'
         // floatingActionButton: FloatingActionButton(s
         //   onPressed: _search,
         //   tooltip: 'Increment',
@@ -100,23 +79,25 @@ class _TokenPricePageState extends State<TokenPricePage> {
         );
   }
 
-  void _processSimplePrice(SimplePriceResponse value) {
+  void getNodesList() {
+    coinsService.getNodeList().then(_processNodesList);
+  }
+
+  void _processNodesList(List<Node> value) {
+    List<ListTile> items = computeListItems(value);
     setState(() {
-      _lastPrice = value;
+      _nodeList = value;
+      _nodesListItems = items;
     });
   }
+}
 
-  void _onCurrencyChanged(String? value) {
-    _search(value);
+List<ListTile> computeListItems(List<Node> value) {
+  List<ListTile> list = List.empty(growable: true);
+  for (var element in value) {
+    print(element.ip!);
+    list.add(ListTile(title: Text(element.ip!)));
   }
 
-  void _search(String? currency) {
-    setState(() {
-      dropdownValue = currency!;
-    });
-
-    if (currency != null && currency.isNotEmpty) {
-      coinsService.getSimplePrice(currency).then(_processSimplePrice);
-    }
-  }
+  return list;
 }

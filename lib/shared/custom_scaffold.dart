@@ -12,11 +12,9 @@ class CustomScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(
-        title: title
-      ),
+      appBar: CustomAppBar(title: title),
       drawer: const CustomDrawer(),
       body: body,
     );
-    }
+  }
 }
