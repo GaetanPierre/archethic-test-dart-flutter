@@ -20,8 +20,11 @@ doc/api/
 *.js.deps
 *.js.map
 
+# Avoid committing secrets
 .seed
 .address
 
+# Avoid committing IDE files
 .idea
+*.iml
 .metadata
