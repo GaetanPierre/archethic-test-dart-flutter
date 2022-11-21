@@ -19,11 +19,9 @@ class _NodesListPageState extends State<NodesListPage> {
 
   List<Node> _nodeList = List<Node>.empty();
 
-  List<ListTile> _nodesListItems = List<ListTile>.empty();
-
   @override
   void initState() {
-    getNodesList();
+    Timer(const Duration(milliseconds: 100), _getNodesList);
     super.initState();
   }
 
@@ -64,7 +62,7 @@ class _NodesListPageState extends State<NodesListPage> {
               Expanded(
                 child: ListView(
                   padding: EdgeInsets.zero,
-                  children: _nodesListItems,
+                  children: _computeListItems(context, _nodeList),
                 ),
               ),
             ],
@@ -79,25 +77,81 @@ class _NodesListPageState extends State<NodesListPage> {
         );
   }
 
-  void getNodesList() {
+  Future<void> _getNodesList() async {
     coinsService.getNodeList().then(_processNodesList);
   }
 
   void _processNodesList(List<Node> value) {
-    List<ListTile> items = computeListItems(value);
     setState(() {
       _nodeList = value;
-      _nodesListItems = items;
     });
   }
 }
 
-List<ListTile> computeListItems(List<Node> value) {
+List<ListTile> _computeListItems(BuildContext context, List<Node> value) {
   List<ListTile> list = List.empty(growable: true);
   for (var element in value) {
-    print(element.ip!);
-    list.add(ListTile(title: Text(element.ip!)));
+    list.add(ListTile(
+      title: Text(element.ip!),
+      onTap: () => _displayDetails(context, element),
+    ));
   }
 
   return list;
+}
+
+Future<void> _displayDetails(BuildContext context, Node element) {
+  return showDialog<void>(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text('Node details'),
+        content: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'IP : ${element.ip}',
+              style: TextStyle(
+                  color: ((element.available! && element.authorized!)
+                      ? Colors.green
+                      : (!element.authorized!)
+                          ? Colors.red
+                          : Colors.orange),
+                  fontWeight: FontWeight.bold),
+            ),
+            Text('PORT : ${element.port}'),
+            Text('Availability : ${element.averageAvailability! * 100}%'),
+            Text(
+                'Enrolement date : ${DateTime.fromMillisecondsSinceEpoch(element.enrollmentDate! * 1000).toString()}'),
+            Text(
+                'Authorization date : ${DateTime.fromMillisecondsSinceEpoch(element.authorizationDate! * 1000).toString()}'),
+            Text('Reward address : ${element.rewardAddress}'),
+            Text('First public key : ${element.firstPublicKey}'),
+            Text('Last public key : ${element.lastPublicKey}'),
+            Text('Network patch : ${element.networkPatch}'),
+            Text('Geo patch : ${element.geoPatch}'),
+          ]
+              .map(
+                (e) => Padding(
+                  padding: const EdgeInsets.fromLTRB(0, 8, 0, 8),
+                  child: e,
+                ),
+              )
+              .toList(),
+        ),
+        actions: <Widget>[
+          TextButton(
+            style: TextButton.styleFrom(
+              textStyle: Theme.of(context).textTheme.labelLarge,
+            ),
+            child: const Text('Ok'),
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+          ),
+        ],
+      );
+    },
+  );
 }
